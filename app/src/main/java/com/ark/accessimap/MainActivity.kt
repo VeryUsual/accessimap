@@ -1,5 +1,7 @@
 package com.ark.accessimap
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,14 +27,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.ark.accessimap.ui.theme.AccessimapTheme
+import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.location.DesiredAccuracy
+import org.maplibre.compose.location.LocationPuck
+import org.maplibre.compose.location.LocationTrackingEffect
+import org.maplibre.compose.location.mostAccurateBearing
+import org.maplibre.compose.location.rememberAndroidLocationProvider
+import org.maplibre.compose.location.rememberDefaultLocationProvider
+import org.maplibre.compose.location.rememberDefaultOrientationProvider
+import org.maplibre.compose.location.rememberUserLocationState
 import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.style.BaseStyle
+import org.maplibre.spatialk.units.extensions.meters
+import kotlin.time.Duration.Companion.milliseconds
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                4132
+            )
+        }
+
         setContent {
             AccessimapTheme {
                 AccessimapApp()
@@ -84,11 +109,30 @@ enum class AppDestinations(
 
 @Composable
 fun Map(modifier: Modifier = Modifier) {
-    Text(
-        text = "Map screen",
-        modifier = modifier
-    )
-    MaplibreMap(baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"))
+    val cameraState = rememberCameraState()
+
+    val locationProvider = rememberDefaultLocationProvider()
+    val orientationProvider = rememberDefaultOrientationProvider()
+    val locationState = rememberUserLocationState(locationProvider, orientationProvider)
+
+    MaplibreMap(
+        baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
+        cameraState = cameraState
+    ) {
+        LocationPuck(
+            idPrefix = "user",
+            location = locationState.location,
+            bearing = locationState.mostAccurateBearing(),
+            cameraState = cameraState,
+        )
+
+        LocationTrackingEffect(locationState = locationState) {
+            val position = currentLocation.location?.position?.value
+            if (position != null) {
+                cameraState.animateTo(CameraPosition(target = position, zoom = 15.0))
+            }
+        }
+    }
 }
 
 @Composable
