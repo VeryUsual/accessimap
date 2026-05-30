@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,6 +26,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.ark.accessimap.ui.theme.AccessimapTheme
+import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.style.BaseStyle
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +44,7 @@ class MainActivity : ComponentActivity() {
 @PreviewScreenSizes
 @Composable
 fun AccessimapApp() {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.MAP) }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -60,10 +64,11 @@ fun AccessimapApp() {
         }
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            Greeting(
-                name = "Android",
-                modifier = Modifier.padding(innerPadding)
-            )
+            when (currentDestination) {
+                AppDestinations.MAP -> Map(modifier = Modifier.padding(innerPadding))
+                AppDestinations.EXPLORE -> Explore(modifier = Modifier.padding(innerPadding))
+                AppDestinations.PROFILE -> Profile(modifier = Modifier.padding(innerPadding))
+            }
         }
     }
 }
@@ -72,23 +77,32 @@ enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
 ) {
-    HOME("Home", Icons.Default.Home),
-    FAVORITES("Favorites", Icons.Default.Favorite),
+    MAP("Map", Icons.Default.LocationOn),
+    EXPLORE("Explore", Icons.Default.List),
     PROFILE("Profile", Icons.Default.AccountBox),
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
+fun Map(modifier: Modifier = Modifier) {
     Text(
-        text = "Hello $name!",
+        text = "Map screen",
+        modifier = modifier
+    )
+    MaplibreMap(baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"))
+}
+
+@Composable
+fun Explore(modifier: Modifier = Modifier) {
+    Text(
+        text = "Explore screen",
         modifier = modifier
     )
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    AccessimapTheme {
-        Greeting("Android")
-    }
+fun Profile(modifier: Modifier = Modifier) {
+    Text(
+        text = "Profile screen",
+        modifier = modifier
+    )
 }
