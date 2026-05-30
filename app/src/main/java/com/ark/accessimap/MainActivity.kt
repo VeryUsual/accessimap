@@ -3,6 +3,8 @@ package com.ark.accessimap
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,11 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,8 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,18 +48,18 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.ark.accessimap.ui.theme.AccessimapTheme
 import kotlinx.coroutines.launch
-import org.maplibre.android.style.expressions.Expression.image
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.const
 import org.maplibre.compose.expressions.dsl.image
 import org.maplibre.compose.expressions.value.SymbolAnchor
 import org.maplibre.compose.layers.SymbolLayer
-import org.maplibre.compose.location.DesiredAccuracy
 import org.maplibre.compose.location.LocationPuck
 import org.maplibre.compose.location.LocationTrackingEffect
 import org.maplibre.compose.location.mostAccurateBearing
-import org.maplibre.compose.location.rememberAndroidLocationProvider
 import org.maplibre.compose.location.rememberDefaultLocationProvider
 import org.maplibre.compose.location.rememberDefaultOrientationProvider
 import org.maplibre.compose.location.rememberUserLocationState
@@ -72,16 +70,16 @@ import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.util.ClickResult
-import org.maplibre.spatialk.geojson.GeoJson
 import org.maplibre.spatialk.geojson.Position
-import org.maplibre.spatialk.units.extensions.meters
-import kotlin.time.Duration.Companion.milliseconds
-import org.json.JSONObject
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val policy = ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
@@ -143,10 +141,30 @@ enum class AppDestinations(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Map(modifier: Modifier = Modifier) {
+    var poisJson by remember { mutableStateOf<String?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var selectedPoi by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        val client = OkHttpClient()
+
+        val request = Request.Builder()
+            .url("http://192.168.1.88:5000/api/places")
+            .build()
+
+        runCatching {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("request error, response code was ${response.code}")
+                response.body?.string() ?: error("empty body")
+            }
+        }.onSuccess { json ->
+            poisJson = json
+        }.onFailure { e ->
+            Log.e("am", "FAIL", e)
+        }
+    }
 
     val cameraState = rememberCameraState(
         firstPosition = CameraPosition(
@@ -189,29 +207,8 @@ fun Map(modifier: Modifier = Modifier) {
             }
         }
 
-        val poisJson = """
-        {
-          "type": "FeatureCollection",
-          "features": [
-            {
-              "type": "Feature",
-              "geometry": {
-                "type": "Point",
-                "coordinates": [-79.2, 43.1]
-              },
-              "properties": {
-                "name": "Random Park",
-                "id": 3,
-                "amenity": "Public Park",
-                "address": "67 King Street Northwest, Brussels, Belgium"
-              }
-            }
-          ]
-        }
-        """.trimIndent() // TODO: gonna replace all this stuff with an actual server soon
-
         val poisSource = rememberGeoJsonSource(
-            GeoJsonData.JsonString(poisJson)
+            GeoJsonData.JsonString(poisJson ?: "{\"type\":\"FeatureCollection\",\"features\":[]}")
         )
 
         SymbolLayer(

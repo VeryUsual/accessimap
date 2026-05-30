@@ -65,4 +65,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.maplibre.compose)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.okhttp)
 }
