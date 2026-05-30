@@ -170,7 +170,7 @@ fun Map(modifier: Modifier = Modifier) {
         options = MapOptions(
             ornamentOptions = OrnamentOptions(
                 isLogoEnabled = false,
-                isAttributionEnabled = false,
+                isAttributionEnabled = true,
                 isScaleBarEnabled = false,
             )
         )
@@ -200,8 +200,10 @@ fun Map(modifier: Modifier = Modifier) {
                 "coordinates": [-79.2, 43.1]
               },
               "properties": {
-                "name": "test",
-                "id": 3
+                "name": "Random Park",
+                "id": 3,
+                "amenity": "Public Park",
+                "address": "67 King Street Northwest, Brussels, Belgium"
               }
             }
           ]
@@ -220,11 +222,7 @@ fun Map(modifier: Modifier = Modifier) {
             iconAllowOverlap = const(true),
             onClick = { features ->
                 if (features.isNotEmpty()) {
-                    val clickedFeature = features[0]
-
-                    selectedPoi = clickedFeature.properties.toString()
-                    Log.d("Accessimap", clickedFeature.properties.toString())
-
+                    selectedPoi = features[0].properties.toString()
                     showBottomSheet = true
                 }
 
@@ -242,7 +240,7 @@ fun Map(modifier: Modifier = Modifier) {
             sheetState = sheetState
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                val poi_id = JSONObject(selectedPoi)["id"].toString()
+                val poi = JSONObject(selectedPoi)
                 // TODO: gonna do network request and all here to get all the info for a certain id
 
                 Row {
@@ -258,15 +256,15 @@ fun Map(modifier: Modifier = Modifier) {
                 Spacer(
                     modifier = Modifier.height(24.dp)
                 )
-                Text("Poi #$poi_id", fontSize = 30.sp)
+                Text(poi["name"].toString(), fontSize = 30.sp)
                 Spacer(
                     modifier = Modifier.height(8.dp)
                 )
-                Text("Public Park", fontSize = 20.sp)
+                Text(poi["amenity"].toString(), fontSize = 20.sp)
                 Spacer(
                     modifier = Modifier.height(8.dp)
                 )
-                Text("67 King Street Northwest, Brussels, Belgium", fontSize = 17.sp)
+                Text(poi["address"].toString(), fontSize = 17.sp)
                 Spacer(
                     modifier = Modifier.height(8.dp)
                 )
