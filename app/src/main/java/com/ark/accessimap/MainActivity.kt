@@ -25,13 +25,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.ark.accessimap.ui.theme.AccessimapTheme
+import org.maplibre.android.style.expressions.Expression.image
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.expressions.dsl.image
+import org.maplibre.compose.expressions.value.SymbolAnchor
+import org.maplibre.compose.layers.SymbolLayer
 import org.maplibre.compose.location.DesiredAccuracy
 import org.maplibre.compose.location.LocationPuck
 import org.maplibre.compose.location.LocationTrackingEffect
@@ -40,8 +47,14 @@ import org.maplibre.compose.location.rememberAndroidLocationProvider
 import org.maplibre.compose.location.rememberDefaultLocationProvider
 import org.maplibre.compose.location.rememberDefaultOrientationProvider
 import org.maplibre.compose.location.rememberUserLocationState
+import org.maplibre.compose.map.MapOptions
 import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.map.OrnamentOptions
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
+import org.maplibre.spatialk.geojson.GeoJson
+import org.maplibre.spatialk.geojson.Position
 import org.maplibre.spatialk.units.extensions.meters
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -109,15 +122,32 @@ enum class AppDestinations(
 
 @Composable
 fun Map(modifier: Modifier = Modifier) {
-    val cameraState = rememberCameraState()
+    val cameraState = rememberCameraState(
+        firstPosition = CameraPosition(
+            target = Position(
+                latitude = 43.1600424,
+                longitude = -79.24372139
+            ),
+            zoom = 11.5
+        )
+    )
 
     val locationProvider = rememberDefaultLocationProvider()
     val orientationProvider = rememberDefaultOrientationProvider()
     val locationState = rememberUserLocationState(locationProvider, orientationProvider)
 
+    val locationMarkerIcon = rememberVectorPainter(Icons.Default.LocationOn)
+
     MaplibreMap(
         baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
-        cameraState = cameraState
+        cameraState = cameraState,
+        options = MapOptions(
+            ornamentOptions = OrnamentOptions(
+                isLogoEnabled = false,
+                isAttributionEnabled = false,
+                isScaleBarEnabled = false,
+            )
+        )
     ) {
         LocationPuck(
             idPrefix = "user",
@@ -132,6 +162,36 @@ fun Map(modifier: Modifier = Modifier) {
                 cameraState.animateTo(CameraPosition(target = position, zoom = 15.0))
             }
         }
+
+        val poisJson = """
+        {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [-79.2, 43.1]
+              },
+              "properties": {
+                "name": "test"
+              }
+            }
+          ]
+        }
+        """.trimIndent()
+
+        val poisSource = rememberGeoJsonSource(
+            GeoJsonData.JsonString(poisJson)
+        )
+
+        SymbolLayer(
+            id = "pois-layer",
+            source = poisSource,
+            iconImage = image(locationMarkerIcon, drawAsSdf = true),
+            iconAnchor = const(SymbolAnchor.Center),
+            iconAllowOverlap = const(true)
+        )
     }
 }
 
