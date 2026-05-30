@@ -8,14 +8,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,12 +38,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.ark.accessimap.ui.theme.AccessimapTheme
@@ -68,6 +76,7 @@ import org.maplibre.spatialk.geojson.GeoJson
 import org.maplibre.spatialk.geojson.Position
 import org.maplibre.spatialk.units.extensions.meters
 import kotlin.time.Duration.Companion.milliseconds
+import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -137,6 +146,7 @@ fun Map(modifier: Modifier = Modifier) {
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+    var selectedPoi by remember { mutableStateOf("") }
 
     val cameraState = rememberCameraState(
         firstPosition = CameraPosition(
@@ -190,12 +200,13 @@ fun Map(modifier: Modifier = Modifier) {
                 "coordinates": [-79.2, 43.1]
               },
               "properties": {
-                "name": "test"
+                "name": "test",
+                "id": 3
               }
             }
           ]
         }
-        """.trimIndent()
+        """.trimIndent() // TODO: gonna replace all this stuff with an actual server soon
 
         val poisSource = rememberGeoJsonSource(
             GeoJsonData.JsonString(poisJson)
@@ -211,6 +222,7 @@ fun Map(modifier: Modifier = Modifier) {
                 if (features.isNotEmpty()) {
                     val clickedFeature = features[0]
 
+                    selectedPoi = clickedFeature.properties.toString()
                     Log.d("Accessimap", clickedFeature.properties.toString())
 
                     showBottomSheet = true
@@ -223,11 +235,45 @@ fun Map(modifier: Modifier = Modifier) {
 
     if (showBottomSheet) {
         ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false },
+            onDismissRequest = {
+                showBottomSheet = false
+                selectedPoi = ""
+            },
             sheetState = sheetState
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Random Place\n67 Random Street")
+                val poi_id = JSONObject(selectedPoi)["id"].toString()
+                // TODO: gonna do network request and all here to get all the info for a certain id
+
+                Row {
+                    repeat(5) {
+                        Icon(
+                            imageVector = Icons.Outlined.StarOutline,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(40.dp),
+                        )
+                    }
+                }
+                Spacer(
+                    modifier = Modifier.height(24.dp)
+                )
+                Text("Poi #$poi_id", fontSize = 30.sp)
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+                Text("Public Park", fontSize = 20.sp)
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+                Text("67 King Street Northwest, Brussels, Belgium", fontSize = 17.sp)
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+                Text("Ratings:\nBlindness-friendly: 5\nMobility: 5", fontSize = 15.sp)
+                Spacer(
+                    modifier = Modifier.height(24.dp)
+                )
 
                 Button(
                     onClick = {
