@@ -89,9 +89,12 @@ class MainActivity : ComponentActivity() {
             )
         }
 
+        val creds = getSharedPreferences("creds", MODE_PRIVATE)
+        val username: String? = creds.getString("username", "")
+
         setContent {
             AccessimapTheme {
-                AccessimapApp()
+                AccessimapApp(username)
             }
         }
     }
@@ -99,7 +102,7 @@ class MainActivity : ComponentActivity() {
 
 @PreviewScreenSizes
 @Composable
-fun AccessimapApp() {
+fun AccessimapApp(username: String?) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.MAP) }
 
     NavigationSuiteScaffold(
@@ -123,7 +126,7 @@ fun AccessimapApp() {
             when (currentDestination) {
                 AppDestinations.MAP -> Map(modifier = Modifier.padding(innerPadding))
                 AppDestinations.EXPLORE -> Explore(modifier = Modifier.padding(innerPadding))
-                AppDestinations.PROFILE -> Profile(modifier = Modifier.padding(innerPadding))
+                AppDestinations.PROFILE -> Profile(username, modifier = Modifier.padding(innerPadding))
             }
         }
     }
@@ -295,9 +298,9 @@ fun Explore(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Profile(modifier: Modifier = Modifier) {
+fun Profile(username: String?, modifier: Modifier = Modifier) {
     Text(
-        text = "Profile screen",
+        text = "Hello, $username",
         modifier = modifier
     )
 }
