@@ -238,7 +238,7 @@ fun Map(modifier: Modifier = Modifier) {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 val poi = JSONObject(selectedPoi)
-                // TODO: gonna do network request and all here to get all the info for a certain id
+                // TODO: gonna do network request and all here to get all the reviews for a certain id
 
                 Row {
                     repeat(5) {
@@ -257,7 +257,7 @@ fun Map(modifier: Modifier = Modifier) {
                 Spacer(
                     modifier = Modifier.height(8.dp)
                 )
-                Text(poi["amenity"].toString(), fontSize = 20.sp)
+                Text(poi["amenity"].toString().replaceFirstChar { it.uppercase() }.replace("_", " "), fontSize = 20.sp)
                 Spacer(
                     modifier = Modifier.height(8.dp)
                 )
