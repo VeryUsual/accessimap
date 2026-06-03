@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -163,11 +164,11 @@ fun Map(modifier: Modifier = Modifier) {
     var selectedPoi by remember { mutableStateOf("") }
     var searchText by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(searchText) {
         val client = OkHttpClient()
 
         val request = Request.Builder()
-            .url("http://192.168.1.88:5000/api/places")
+            .url("http://192.168.1.88:5000/api/places?filter=$searchText")
             .build()
 
         runCatching {
@@ -268,7 +269,8 @@ fun Map(modifier: Modifier = Modifier) {
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     disabledContainerColor = Color.Transparent
-                )
+                ),
+                singleLine = true
             )
         }
     }
@@ -310,22 +312,40 @@ fun Map(modifier: Modifier = Modifier) {
                 Spacer(
                     modifier = Modifier.height(8.dp)
                 )
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = Color.Gray
+                )
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+                Text("Reviews", fontSize = 25.sp)
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
                 Text("Ratings:\nBlindness-friendly: 5\nMobility: 5", fontSize = 15.sp)
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+                Text("John Doe (Blind, Wheelchair Bound)", fontSize = 14.sp)
+                Text("4 stars for Blindness | 2 months ago", fontSize = 14.sp)
+                Text("Very good place has braille for every sign! Sadly the washroom didn't have them!!")
+
                 Spacer(
                     modifier = Modifier.height(24.dp)
                 )
 
-                Button(
-                    onClick = {
-                        scope.launch {
-                            sheetState.hide()
-                        }.invokeOnCompletion {
-                            showBottomSheet = false
-                        }
-                    }
-                ) {
-                    Text("Close")
-                }
+//                Button(
+//                    onClick = {
+//                        scope.launch {
+//                            sheetState.hide()
+//                        }.invokeOnCompletion {
+//                            showBottomSheet = false
+//                        }
+//                    }
+//                ) {
+//                    Text("Close")
+//                }v
             }
         }
     }
