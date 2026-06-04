@@ -65,6 +65,7 @@ import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.finishAffinity
 import androidx.core.content.ContextCompat
 import com.ark.accessimap.ui.theme.AccessimapTheme
 import kotlinx.coroutines.launch
@@ -91,6 +92,7 @@ import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.util.ClickResult
 import org.maplibre.spatialk.geojson.Position
+import kotlin.system.exitProcess
 
 
 class MainActivity : ComponentActivity() {
@@ -420,8 +422,44 @@ fun Explore(modifier: Modifier = Modifier) {
 
 @Composable
 fun Profile(username: String?, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello, $username",
-        modifier = modifier
-    )
+    Column(modifier = modifier.padding(horizontal = 20.dp)) {
+
+        Text(
+            text = "Profile",
+            modifier = modifier,
+            fontSize = 29.sp
+        )
+
+        Spacer(
+            modifier = Modifier.height(18.dp)
+        )
+
+        Text(
+            text = "$username",
+            fontSize = 20.sp
+        )
+
+        Spacer(
+            modifier = Modifier.height(7.dp)
+        )
+
+        Text(
+            text = "Joined June 2026"
+        )
+
+        Text(
+            text = "28 reviews contributed"
+        )
+
+        Spacer(
+            modifier = Modifier.height(30.dp)
+        )
+
+        Button(
+            onClick = { exitProcess(-1); }
+        ) {
+            Text("Sign out")
+        }
+
+    }
 }
