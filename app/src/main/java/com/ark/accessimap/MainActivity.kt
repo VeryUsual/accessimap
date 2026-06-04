@@ -9,6 +9,10 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -50,7 +55,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.input.KeyboardType
@@ -353,10 +360,62 @@ fun Map(modifier: Modifier = Modifier) {
 
 @Composable
 fun Explore(modifier: Modifier = Modifier) {
-    Text(
-        text = "Explore screen",
-        modifier = modifier
-    )
+    Box(modifier = modifier.padding(20.dp)) {
+        Column() {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column() {
+                    Box(
+                        modifier = Modifier
+                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text("All (24)")
+                    }
+                }
+
+                Column() {
+                    Box(
+                        modifier = Modifier
+                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text("Parks (4)")
+                    }
+                }
+
+                Column() {
+                    Box(
+                        modifier = Modifier
+                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text("Cafes (4)")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Box(
+                modifier = Modifier
+                    .border(
+                        width = 2.dp,
+                        brush = SolidColor(Color.LightGray),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(8.dp)
+                    .height(100.dp)
+                    .fillMaxWidth()
+            ) {
+                Column {
+                    Text("Tim Hortons", fontSize = 25.sp)
+                    Text("28 Example Street")
+                    Text("2.6 overall | 28 reviews")
+                    Text("1.3 for blindness | 4 reviews")
+                }
+            }
+        }
+    }
 }
 
 @Composable
