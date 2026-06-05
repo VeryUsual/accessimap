@@ -1,6 +1,7 @@
 package com.ark.accessimap
 
 import android.Manifest
+import android.R.attr.text
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.StrictMode
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.List
@@ -56,6 +58,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -65,6 +68,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.finishAffinity
 import androidx.core.content.ContextCompat
@@ -169,6 +174,7 @@ enum class AppDestinations(
 fun Map(modifier: Modifier = Modifier) {
     var poisJson by remember { mutableStateOf<String?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showPopup by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var selectedPoi by remember { mutableStateOf("") }
@@ -345,7 +351,10 @@ fun Map(modifier: Modifier = Modifier) {
                 ) {
 
                     Button(
-                        onClick = {},
+                        onClick = {
+                            showPopup = true
+                            showBottomSheet = false
+                        },
                     ) {
                         Text("Write a review")
                     }
@@ -363,6 +372,30 @@ fun Map(modifier: Modifier = Modifier) {
                 Spacer(
                     modifier = Modifier.height(24.dp)
                 )
+            }
+        }
+    }
+
+    if (showPopup) {
+        Popup(
+            alignment = Alignment.Center,
+            onDismissRequest = { showPopup = false },
+            properties = PopupProperties(focusable = true)
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(Color.White)
+                    .padding(60.dp)
+            ) {
+                Column {
+                    Text("Write your review:")
+                    TextField(
+                        state = rememberTextFieldState(initialText = ""),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                    )
+                }
             }
         }
     }
