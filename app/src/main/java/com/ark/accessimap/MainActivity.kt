@@ -12,6 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -332,10 +333,29 @@ fun Map(modifier: Modifier = Modifier) {
                 Spacer(
                     modifier = Modifier.height(14.dp)
                 )
-                Text("Ratings:\nBlindness-friendly: 5\nMobility: 5", fontSize = 15.sp)
+
+                Text("Blindness-friendly: 5\nMobility: 5", fontSize = 15.sp)
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Button(
+                        onClick = {},
+                    ) {
+                        Text("Write a review")
+                    }
+
+                }
+
                 Spacer(
-                    modifier = Modifier.height(14.dp)
+                    modifier = Modifier.height(20.dp)
                 )
+
                 Text("John Doe (Blind, Wheelchair Bound)", fontSize = 14.sp)
                 Text("4 stars for Blindness | 2 months ago", fontSize = 14.sp)
                 Text("Very good place has braille for every sign! Sadly the washroom didn't have them!!")
@@ -343,25 +363,18 @@ fun Map(modifier: Modifier = Modifier) {
                 Spacer(
                     modifier = Modifier.height(24.dp)
                 )
-
-//                Button(
-//                    onClick = {
-//                        scope.launch {
-//                            sheetState.hide()
-//                        }.invokeOnCompletion {
-//                            showBottomSheet = false
-//                        }
-//                    }
-//                ) {
-//                    Text("Close")
-//                }v
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Explore(modifier: Modifier = Modifier) {
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    var selectedPoi by remember { mutableStateOf("") }
+
     Box(modifier = modifier.padding(20.dp)) {
         Column() {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -408,6 +421,12 @@ fun Explore(modifier: Modifier = Modifier) {
                     .padding(8.dp)
                     .height(100.dp)
                     .fillMaxWidth()
+                    .clickable(
+                        onClick = {
+                            selectedPoi = "{\"name\":\"Tim Hortons\",\"amenity\":\"cafe\",\"address\":\"128 Idk Street\"}"
+                            showBottomSheet = true
+                        }
+                    ),
             ) {
                 Column {
                     Text("Tim Hortons", fontSize = 25.sp)
@@ -415,6 +434,88 @@ fun Explore(modifier: Modifier = Modifier) {
                     Text("2.6 overall | 28 reviews")
                     Text("1.3 for blindness | 4 reviews")
                 }
+            }
+        }
+    }
+
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showBottomSheet = false
+                selectedPoi = ""
+            },
+            sheetState = sheetState
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                val poi = JSONObject(selectedPoi)
+                // TODO: gonna do network request and all here to get all the reviews for a certain id
+
+                Row {
+                    repeat(5) {
+                        Icon(
+                            imageVector = Icons.Outlined.StarOutline,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(40.dp),
+                        )
+                    }
+                }
+                Spacer(
+                    modifier = Modifier.height(24.dp)
+                )
+                Text(poi["name"].toString(), fontSize = 30.sp)
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+                Text(poi["amenity"].toString().replaceFirstChar { it.uppercase() }.replace("_", " "), fontSize = 20.sp)
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+                Text(poi["address"].toString(), fontSize = 17.sp)
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = Color.Gray
+                )
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+                Text("Reviews", fontSize = 25.sp)
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+
+                Text("Blindness-friendly: 5\nMobility: 5", fontSize = 15.sp)
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Button(
+                        onClick = {},
+                    ) {
+                        Text("Write a review")
+                    }
+
+                }
+
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
+
+                Text("John Doe (Blind, Wheelchair Bound)", fontSize = 14.sp)
+                Text("4 stars for Blindness | 2 months ago", fontSize = 14.sp)
+                Text("Very good place has braille for every sign! Sadly the washroom didn't have them!!")
+
+                Spacer(
+                    modifier = Modifier.height(24.dp)
+                )
             }
         }
     }
