@@ -487,6 +487,8 @@ fun Explore(modifier: Modifier = Modifier) {
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     var selectedPoi by remember { mutableStateOf("") }
+    var showPopup by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
 
     Box(modifier = modifier.padding(20.dp)) {
         Column() {
@@ -611,7 +613,10 @@ fun Explore(modifier: Modifier = Modifier) {
                 ) {
 
                     Button(
-                        onClick = {},
+                        onClick = {
+                            showPopup = true
+                            showBottomSheet = false
+                        },
                     ) {
                         Text("Write a review")
                     }
@@ -632,6 +637,56 @@ fun Explore(modifier: Modifier = Modifier) {
             }
         }
     }
+
+    var showSuccessAnim by remember { mutableStateOf(false) }
+    val blurRadius by animateDpAsState(
+        targetValue = if (showSuccessAnim) 15.dp else 0.dp,
+        animationSpec = tween(2000)
+    )
+
+    if (showPopup) {
+        Popup(
+            alignment = Alignment.Center,
+            onDismissRequest = { showPopup = false },
+            properties = PopupProperties(focusable = true)
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(Color.White)
+                    .padding(60.dp)
+                    .blur(blurRadius, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+            ) {
+                Column {
+                    Text("Write your review:")
+                    Spacer(modifier = Modifier.height(15.dp))
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        Text("Wheelchair: ")
+                        StarRatingChooser()
+                    }
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        Text("Blindness: ")
+                        StarRatingChooser()
+                    }
+                    Spacer(modifier = Modifier.height(15.dp))
+                    TextField(
+                        state = rememberTextFieldState(initialText = ""),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                    )
+                    Spacer(modifier = Modifier.height(15.dp))
+                    Button(onClick = { showSuccessAnim = true; }) {
+                        Text("Submit Review")
+                    }
+                }
+            }
+        }
+    }
+
+    SuccessCheckmarkAnimation(
+        isVisible = showSuccessAnim,
+        onDismiss = { showSuccessAnim = false; showPopup = false; focusManager.clearFocus(); }
+    )
 }
 
 @Composable
