@@ -73,4 +73,5 @@ dependencies {
     implementation(libs.maplibre.compose)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.okhttp)
+    implementation("com.airbnb.android:lottie-compose:6.6.7")
 }

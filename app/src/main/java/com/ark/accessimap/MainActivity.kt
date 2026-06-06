@@ -10,6 +10,8 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +34,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,16 +62,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.app.ActivityCompat
@@ -99,7 +107,7 @@ import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.util.ClickResult
 import org.maplibre.spatialk.geojson.Position
 import kotlin.system.exitProcess
-
+import com.airbnb.lottie.compose.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -179,12 +187,13 @@ fun Map(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     var selectedPoi by remember { mutableStateOf("") }
     var searchText by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(searchText) {
         val client = OkHttpClient()
 
         val request = Request.Builder()
-            .url("http://192.168.1.88:5000/api/places?filter=$searchText")
+            .url("https://accessimap.pythonanywhere.com/api/places?filter=$searchText")
             .build()
 
         runCatching {
@@ -376,6 +385,12 @@ fun Map(modifier: Modifier = Modifier) {
         }
     }
 
+    var showSuccessAnim by remember { mutableStateOf(false) }
+    val blurRadius by animateDpAsState(
+        targetValue = if (showSuccessAnim) 15.dp else 0.dp,
+        animationSpec = tween(2000)
+    )
+
     if (showPopup) {
         Popup(
             alignment = Alignment.Center,
@@ -386,16 +401,81 @@ fun Map(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .background(Color.White)
                     .padding(60.dp)
+                    .blur(blurRadius, edgeTreatment = BlurredEdgeTreatment.Unbounded)
             ) {
                 Column {
                     Text("Write your review:")
+                    Spacer(modifier = Modifier.height(15.dp))
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        Text("Wheelchair: ")
+                        StarRatingChooser()
+                    }
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        Text("Blindness: ")
+                        StarRatingChooser()
+                    }
+                    Spacer(modifier = Modifier.height(15.dp))
                     TextField(
                         state = rememberTextFieldState(initialText = ""),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(100.dp)
                     )
+                    Spacer(modifier = Modifier.height(15.dp))
+                    Button(onClick = { showSuccessAnim = true; }) {
+                        Text("Submit Review")
+                    }
                 }
+            }
+        }
+    }
+
+    SuccessCheckmarkAnimation(
+        isVisible = showSuccessAnim,
+        onDismiss = { showSuccessAnim = false; showPopup = false; focusManager.clearFocus(); }
+    )
+}
+
+@Composable
+fun StarRatingChooser() {
+    var rating by remember { mutableStateOf(3) }
+    Row(horizontalArrangement = Arrangement.Center) {
+        (1..5).forEach { star ->
+            Icon(
+                imageVector = if (star <= rating) Icons.Default.Star else Icons.Default.StarBorder,
+                contentDescription = "$star star",
+                modifier = Modifier.clickable { rating = star }
+            )
+        }
+    }
+}
+
+@Composable
+fun SuccessCheckmarkAnimation(isVisible: Boolean, onDismiss: () -> Unit) {
+    if (isVisible) {
+        Dialog(onDismissRequest = onDismiss) {
+            val comp by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.checkmark_animation)
+            )
+
+            val progress by animateLottieCompositionAsState(
+                composition = comp,
+                isPlaying = true,
+                iterations = 1,
+            )
+
+            LaunchedEffect(progress) {
+                if (progress == 1f) {
+                    onDismiss()
+                }
+            }
+
+            Box {
+                LottieAnimation(
+                    composition = comp,
+                    progress = { progress },
+                    modifier = Modifier.size(100.dp)
+                )
             }
         }
     }
