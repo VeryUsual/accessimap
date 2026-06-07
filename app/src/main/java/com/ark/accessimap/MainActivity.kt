@@ -27,9 +27,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.List
@@ -316,7 +318,11 @@ fun Map(username: String?, modifier: Modifier = Modifier) {
             },
             sheetState = sheetState
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
                 val poi = JSONObject(selectedPoi)
                 val poiId = poi["id"].toString()
 
@@ -393,8 +399,8 @@ fun Map(username: String?, modifier: Modifier = Modifier) {
                     mobilityAvg = totalMobility / count.toDouble()
                 }
 
-                var blindnessAvgString = String.format(Locale.CANADA, "%.1f", blindnessAvg)
-                var mobilityAvgString = String.format(Locale.CANADA, "%.1f", mobilityAvg)
+                val blindnessAvgString = String.format(Locale.CANADA, "%.1f", blindnessAvg)
+                val mobilityAvgString = String.format(Locale.CANADA, "%.1f", mobilityAvg)
 
                 Text("Blindness-friendly: $blindnessAvgString\nMobility: $mobilityAvgString", fontSize = 15.sp)
 
