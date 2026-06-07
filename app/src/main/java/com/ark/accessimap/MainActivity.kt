@@ -1027,7 +1027,7 @@ fun Profile(username: String?, modifier: Modifier = Modifier) {
         )
 
         Text(
-            text = "28 reviews contributed"
+            text = "2 reviews contributed"
         )
 
         Spacer(
