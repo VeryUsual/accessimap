@@ -108,6 +108,14 @@ import org.maplibre.compose.util.ClickResult
 import org.maplibre.spatialk.geojson.Position
 import kotlin.system.exitProcess
 import com.airbnb.lottie.compose.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
+import okio.IOException
+import org.json.JSONArray
+import org.json.JSONTokener
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -159,7 +167,7 @@ fun AccessimapApp(username: String?) {
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             when (currentDestination) {
-                AppDestinations.MAP -> Map(modifier = Modifier.padding(innerPadding))
+                AppDestinations.MAP -> Map(username, modifier = Modifier.padding(innerPadding))
                 AppDestinations.EXPLORE -> Explore(modifier = Modifier.padding(innerPadding))
                 AppDestinations.PROFILE -> Profile(username, modifier = Modifier.padding(innerPadding))
             }
@@ -178,7 +186,7 @@ enum class AppDestinations(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Map(modifier: Modifier = Modifier) {
+fun Map(username: String?, modifier: Modifier = Modifier) {
     var poisJson by remember { mutableStateOf<String?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
@@ -309,7 +317,7 @@ fun Map(modifier: Modifier = Modifier) {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 val poi = JSONObject(selectedPoi)
-                // TODO: gonna do network request and all here to get all the reviews for a certain id
+                val poiId = poi["id"].toString()
 
                 Row {
                     repeat(5) {
@@ -324,6 +332,7 @@ fun Map(modifier: Modifier = Modifier) {
                 Spacer(
                     modifier = Modifier.height(24.dp)
                 )
+
                 Text(poi["name"].toString(), fontSize = 30.sp)
                 Spacer(
                     modifier = Modifier.height(8.dp)
@@ -373,13 +382,33 @@ fun Map(modifier: Modifier = Modifier) {
                     modifier = Modifier.height(20.dp)
                 )
 
-                Text("John Doe (Blind, Wheelchair Bound)", fontSize = 14.sp)
-                Text("4 stars for Blindness | 2 months ago", fontSize = 14.sp)
-                Text("Very good place has braille for every sign! Sadly the washroom didn't have them!!")
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("https://accessimap.pythonanywhere.com/api/reviews/$poiId")
+                    .build()
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw IOException("the server replyed with unsuccessful code $response when querying for reviews")
 
-                Spacer(
-                    modifier = Modifier.height(24.dp)
-                )
+                    val jsonData = response.body.string()
+                    val data = JSONTokener(jsonData).nextValue() as JSONArray
+
+                    for (i in 0 until data.length()) {
+                        val review = data.getJSONObject(i)
+
+                        val blindnessRating = review["blindness_rating"]
+                        val wheelchairRating = review["wheelchair_rating"]
+                        val username = review["username"]
+                        val reviewText = review["review_text"]
+
+                        Text("$username (Blind, Wheelchair Bound)", fontSize = 14.sp)
+                        Text("$blindnessRating stars for blindness, $wheelchairRating stars for wheelchair | Today", fontSize = 14.sp)
+                        Text("$reviewText")
+
+                        Spacer(
+                            modifier = Modifier.height(24.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -390,8 +419,8 @@ fun Map(modifier: Modifier = Modifier) {
         animationSpec = tween(2000)
     )
 
-    var wheelchairRating by remember { mutableStateOf(3) }
-    var blindnessRating by remember { mutableStateOf(3) }
+    var wheelchairRating by remember { mutableStateOf(0) }
+    var blindnessRating by remember { mutableStateOf(0) }
     var reviewText by remember { mutableStateOf("") }
 
     if (showPopup) {
@@ -428,6 +457,30 @@ fun Map(modifier: Modifier = Modifier) {
                     Spacer(modifier = Modifier.height(15.dp))
                     Button(onClick = {
                         Log.d("accessimap", "$wheelchairRating $blindnessRating $reviewText")
+
+                        val poi = JSONObject(selectedPoi)
+
+                        val poiId = poi["id"].toString()
+
+                        val encodedReviewText = URLEncoder.encode(reviewText, StandardCharsets.UTF_8)
+
+                        val client = OkHttpClient()
+                        val request = Request.Builder()
+                            .url(
+                                "https://accessimap.pythonanywhere.com/api/review/submit?wheelchair_rating=$wheelchairRating&blindness_rating=$blindnessRating&username=$username&review_text=$encodedReviewText&place_id=$poiId"
+                            )
+                            .build()
+                        client.newCall(request).enqueue(object : Callback {
+                            override fun onFailure(call: Call, e: IOException) {
+                                Log.e("accessimap", e.toString())
+                            }
+
+                            override fun onResponse(call: Call, response: Response) {
+                                response.body.string().let { data ->
+                                    Log.d("Accessimap", data)
+                                }
+                            }
+                        })
                         showSuccessAnim = true
                     }) {
                         Text("Submit Review")
@@ -439,7 +492,14 @@ fun Map(modifier: Modifier = Modifier) {
 
     SuccessCheckmarkAnimation(
         isVisible = showSuccessAnim,
-        onDismiss = { showSuccessAnim = false; showPopup = false; focusManager.clearFocus(); }
+        onDismiss = {
+            showSuccessAnim = false
+            showPopup = false
+            focusManager.clearFocus()
+            wheelchairRating = 0
+            blindnessRating = 0
+            reviewText = ""
+        }
     )
 }
 
