@@ -19,6 +19,12 @@
         android:theme="@style/Theme.Accessimap"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".WelcomeActivity"
+            android:exported="true"
+            android:label="@string/title_activity_welcome"
+            android:theme="@style/Theme.Accessimap">
+        </activity>
+        <activity
             android:name=".ui.login.LoginActivity"
             android:exported="true"
             android:label="Accessimap"
@@ -33,8 +39,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Accessimap">
-        </activity>
+            android:theme="@style/Theme.Accessimap"></activity>
     </application>
 
 </manifest>

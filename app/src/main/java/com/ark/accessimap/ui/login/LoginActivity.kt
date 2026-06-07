@@ -18,6 +18,7 @@ import com.ark.accessimap.MainActivity
 import com.ark.accessimap.R
 import com.ark.accessimap.databinding.ActivityLoginBinding
 import androidx.core.content.edit
+import com.ark.accessimap.WelcomeActivity
 import kotlin.toString
 
 
@@ -36,6 +37,7 @@ class LoginActivity : AppCompatActivity() {
         val password = binding.password
         val login = binding.login
         val loading = binding.loading
+        val register = binding.register
 
         loginViewModel = ViewModelProvider(this, LoginViewModelFactory())
             .get(LoginViewModel::class.java)
@@ -97,6 +99,11 @@ class LoginActivity : AppCompatActivity() {
                 loading.visibility = View.VISIBLE
                 loginViewModel.login(username.text.toString(), password.text.toString())
             }
+        }
+
+        register?.setOnClickListener {
+            val intent = Intent(this, WelcomeActivity::class.java)
+            startActivity(intent)
         }
     }
 

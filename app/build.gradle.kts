@@ -75,4 +75,5 @@ dependencies {
     implementation(libs.okhttp)
     implementation("com.airbnb.android:lottie-compose:6.6.7")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("androidx.navigation:navigation-compose:2.9.8")
 }
