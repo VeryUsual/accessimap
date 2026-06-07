@@ -116,6 +116,7 @@ import org.json.JSONArray
 import org.json.JSONTokener
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -319,6 +320,9 @@ fun Map(username: String?, modifier: Modifier = Modifier) {
                 val poi = JSONObject(selectedPoi)
                 val poiId = poi["id"].toString()
 
+                var blindnessAvg by remember { mutableStateOf(0.0) }
+                var mobilityAvg by remember { mutableStateOf(0.0) }
+
                 Row {
                     repeat(5) {
                         Icon(
@@ -357,7 +361,42 @@ fun Map(username: String?, modifier: Modifier = Modifier) {
                     modifier = Modifier.height(14.dp)
                 )
 
-                Text("Blindness-friendly: 5\nMobility: 5", fontSize = 15.sp)
+                var reviews: JSONArray
+                var totalBlindness = 0
+                var totalMobility = 0
+                var count = 0
+
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("https://accessimap.pythonanywhere.com/api/reviews/$poiId")
+                    .build()
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw IOException("the server replyed with unsuccessful code $response when querying for reviews")
+
+                    val jsonData = response.body.string()
+                    val data = JSONTokener(jsonData).nextValue() as JSONArray
+
+                    reviews = data
+
+                    for (i in 0 until reviews.length()) {
+                        val review = reviews.getJSONObject(i)
+                        val blindnessRating = review["blindness_rating"]
+                        val wheelchairRating = review["wheelchair_rating"]
+                        totalBlindness += blindnessRating as Int
+                        totalMobility += wheelchairRating as Int
+                        count++
+                    }
+                }
+
+                if (count > 0) {
+                    blindnessAvg = totalBlindness / count.toDouble()
+                    mobilityAvg = totalMobility / count.toDouble()
+                }
+
+                var blindnessAvgString = String.format(Locale.CANADA, "%.1f", blindnessAvg)
+                var mobilityAvgString = String.format(Locale.CANADA, "%.1f", mobilityAvg)
+
+                Text("Blindness-friendly: $blindnessAvgString\nMobility: $mobilityAvgString", fontSize = 15.sp)
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -382,32 +421,25 @@ fun Map(username: String?, modifier: Modifier = Modifier) {
                     modifier = Modifier.height(20.dp)
                 )
 
-                val client = OkHttpClient()
-                val request = Request.Builder()
-                    .url("https://accessimap.pythonanywhere.com/api/reviews/$poiId")
-                    .build()
-                client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) throw IOException("the server replyed with unsuccessful code $response when querying for reviews")
+                for (i in 0 until reviews.length()) {
+                    val review = reviews.getJSONObject(i)
 
-                    val jsonData = response.body.string()
-                    val data = JSONTokener(jsonData).nextValue() as JSONArray
+                    val blindnessRating = review["blindness_rating"]
+                    val wheelchairRating = review["wheelchair_rating"]
+                    val username = review["username"]
+                    val reviewText = review["review_text"]
 
-                    for (i in 0 until data.length()) {
-                        val review = data.getJSONObject(i)
+                    Text("$username (Blind, Wheelchair Bound)", fontSize = 14.sp)
+                    Text("$blindnessRating stars for blindness, $wheelchairRating stars for wheelchair | Today", fontSize = 14.sp)
+                    Text("$reviewText")
 
-                        val blindnessRating = review["blindness_rating"]
-                        val wheelchairRating = review["wheelchair_rating"]
-                        val username = review["username"]
-                        val reviewText = review["review_text"]
+                    Spacer(
+                        modifier = Modifier.height(24.dp)
+                    )
 
-                        Text("$username (Blind, Wheelchair Bound)", fontSize = 14.sp)
-                        Text("$blindnessRating stars for blindness, $wheelchairRating stars for wheelchair | Today", fontSize = 14.sp)
-                        Text("$reviewText")
-
-                        Spacer(
-                            modifier = Modifier.height(24.dp)
-                        )
-                    }
+                    totalBlindness += blindnessRating as Int
+                    totalMobility += wheelchairRating as Int
+                    count++
                 }
             }
         }
