@@ -51,11 +51,13 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -171,7 +173,7 @@ fun AccessimapApp(username: String?) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             when (currentDestination) {
                 AppDestinations.MAP -> Map(username, modifier = Modifier.padding(innerPadding))
-                AppDestinations.EXPLORE -> Explore(modifier = Modifier.padding(innerPadding))
+                AppDestinations.EXPLORE -> Explore(username = username, modifier = Modifier.padding(innerPadding))
                 AppDestinations.PROFILE -> Profile(username, modifier = Modifier.padding(innerPadding))
             }
         }
@@ -587,72 +589,137 @@ fun SuccessCheckmarkAnimation(isVisible: Boolean, onDismiss: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Explore(modifier: Modifier = Modifier) {
+fun Explore(modifier: Modifier = Modifier, username: String? = null) {
+    var poisJson by remember { mutableStateOf<String?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showPopup by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     var selectedPoi by remember { mutableStateOf("") }
-    var showPopup by remember { mutableStateOf(false) }
+    var selectedFilter by remember { mutableStateOf("All") }
+    var searchText by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(selectedFilter, searchText) {
+        val client = OkHttpClient()
+        val filter = if (selectedFilter == "All") "" else selectedFilter.lowercase()
+        val request = Request.Builder()
+            .url("https://accessimap.pythonanywhere.com/api/places?filter=$searchText&limit=75&category=$filter") // TODO: actually use search text
+            .build()
+
+        runCatching {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("request FAILED")
+                response.body.string()
+            }
+        }.onSuccess { json ->
+            poisJson = json
+        }.onFailure { e ->
+            Log.e("Accessimap Explore Page", "/api/places FAILED")
+        }
+    }
+
+    val pois = remember(poisJson) {
+        try {
+            val root = JSONObject(poisJson ?: "{}")
+            val features = root.getJSONArray("features")
+            List(features.length()) { i ->
+                features.getJSONObject(i).getJSONObject("properties")
+            }
+        } catch (e: Exception) {
+            emptyList<JSONObject>()
+        }
+    }
+
+    val filteredPois = remember(pois, selectedFilter) {
+        if (selectedFilter == "All") pois
+        else pois.filter { poi ->
+            poi.getString("amenity").replace("parking", "", ignoreCase = true).contains(selectedFilter.lowercase().dropLast(1), ignoreCase = true)
+        }
+    }
 
     Box(modifier = modifier.padding(20.dp)) {
-        Column() {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column() {
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                listOf("All", "Parks", "Cafes").forEach { category ->
                     Box(
                         modifier = Modifier
-                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                            .border(
+                                2.dp,
+                                color = if (selectedFilter == category) Color.Black else Color.LightGray,
+                                RoundedCornerShape(8.dp)
+                            )
                             .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .clickable { selectedFilter = category }
                     ) {
-                        Text("All (24)")
-                    }
-                }
-
-                Column() {
-                    Box(
-                        modifier = Modifier
-                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Text("Parks (4)")
-                    }
-                }
-
-                Column() {
-                    Box(
-                        modifier = Modifier
-                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Text("Cafes (4)")
+                        Text(category)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            Box(
+            Surface(
                 modifier = Modifier
-                    .border(
-                        width = 2.dp,
-                        brush = SolidColor(Color.LightGray),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(8.dp)
-                    .height(100.dp)
                     .fillMaxWidth()
-                    .clickable(
-                        onClick = {
-                            selectedPoi = "{\"name\":\"Tim Hortons\",\"amenity\":\"cafe\",\"address\":\"128 Idk Street\"}"
-                            showBottomSheet = true
-                        }
-                    ),
+                    .padding(bottom = 16.dp),
+                color = Color.White,
+                shadowElevation = 4.dp,
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Column {
-                    Text("Tim Hortons", fontSize = 25.sp)
-                    Text("28 Example Street")
-                    Text("2.6 overall | 28 reviews")
-                    Text("1.3 for blindness | 4 reviews")
+                TextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    placeholder = { Text("Search places...") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent
+                    ),
+                    singleLine = true
+                )
+            }
+
+            filteredPois.forEach { poi ->
+                Box(
+                    modifier = Modifier
+                        .border(
+                            width = 2.dp,
+                            brush = SolidColor(Color.LightGray),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(8.dp)
+                        .height(100.dp)
+                        .fillMaxWidth()
+                        .clickable(
+                            onClick = {
+                                selectedPoi = poi.toString()
+                                showBottomSheet = true
+                            }
+                        ),
+                ) {
+                    Column {
+                        Text(poi.getString("name"), fontSize = 25.sp)
+                        if (poi.getString("address") != "") {
+                            Text(poi.getString("address"))
+                        }
+                        Text(
+                            poi.getString("amenity").replace("_", " ").split(" ")
+                                .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(10.dp))
             }
         }
     }
@@ -665,9 +732,16 @@ fun Explore(modifier: Modifier = Modifier) {
             },
             sheetState = sheetState
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
                 val poi = JSONObject(selectedPoi)
-                // TODO: gonna do network request and all here to get all the reviews for a certain id
+                val poiId = poi["id"].toString()
+
+                var blindnessAvg by remember { mutableStateOf(0.0) }
+                var mobilityAvg by remember { mutableStateOf(0.0) }
 
                 Row {
                     repeat(5) {
@@ -706,7 +780,47 @@ fun Explore(modifier: Modifier = Modifier) {
                     modifier = Modifier.height(14.dp)
                 )
 
-                Text("Blindness-friendly: 5\nMobility: 5", fontSize = 15.sp)
+                var reviews: JSONArray
+                var totalBlindness = 0
+                var totalMobility = 0
+                var count = 0
+
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("https://accessimap.pythonanywhere.com/api/reviews/$poiId")
+                    .build()
+                try {
+                    client.newCall(request).execute().use { response ->
+                        if (!response.isSuccessful) throw IOException("ERROR requesting /api/reviews")
+
+                        val jsonData = response.body.string()
+                        val data = JSONTokener(jsonData).nextValue() as JSONArray
+                        reviews = data
+
+                        for (i in 0 until reviews.length()) {
+                            val review = reviews.getJSONObject(i)
+                            val blindnessRating = review["blindness_rating"] as Int
+                            val wheelchairRating = review["wheelchair_rating"] as Int
+
+                            totalBlindness += blindnessRating
+                            totalMobility += wheelchairRating
+                            count++
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("accessimap explore page", "failed to get reviews", e)
+                    reviews = JSONArray()
+                }
+
+                if (count > 0) {
+                    blindnessAvg = totalBlindness / count.toDouble()
+                    mobilityAvg = totalMobility / count.toDouble()
+                }
+
+                val blindnessAvgString = String.format(Locale.CANADA, "%.1f", blindnessAvg)
+                val mobilityAvgString = String.format(Locale.CANADA, "%.1f", mobilityAvg)
+
+                Text("Blindness-friendly: $blindnessAvgString\nMobility: $mobilityAvgString")
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -727,17 +841,20 @@ fun Explore(modifier: Modifier = Modifier) {
 
                 }
 
-                Spacer(
-                    modifier = Modifier.height(20.dp)
-                )
+                Spacer(modifier = Modifier.height(20.dp))
 
-                Text("John Doe (Blind, Wheelchair Bound)", fontSize = 14.sp)
-                Text("4 stars for Blindness | 2 months ago", fontSize = 14.sp)
-                Text("Very good place has braille for every sign! Sadly the washroom didn't have them!!")
+                for (i in 0 until reviews.length()) {
+                    val review = reviews.getJSONObject(i)
+                    val blindnessRating = review["blindness_rating"] as Int
+                    val wheelchairRating = review["wheelchair_rating"] as Int
+                    val username = review["username"] as String
+                    val reviewText = review["review_text"] as String
 
-                Spacer(
-                    modifier = Modifier.height(24.dp)
-                )
+                    Text("$username (Blind, Wheelchair Bound)", fontSize = 14.sp)
+                    Text("$blindnessRating stars for blindness, $wheelchairRating stars for wheelchair-friendliness | Today", fontSize = 14.sp)
+                    Text(reviewText)
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
@@ -748,8 +865,8 @@ fun Explore(modifier: Modifier = Modifier) {
         animationSpec = tween(2000)
     )
 
-    var wheelchairRating by remember { mutableStateOf(3) }
-    var blindnessRating by remember { mutableStateOf(3) }
+    var wheelchairRating by remember { mutableStateOf(0) }
+    var blindnessRating by remember { mutableStateOf(0) }
     var reviewText by remember { mutableStateOf("") }
 
     if (showPopup) {
@@ -785,7 +902,31 @@ fun Explore(modifier: Modifier = Modifier) {
                     )
                     Spacer(modifier = Modifier.height(15.dp))
                     Button(onClick = {
-                        Log.d("accessimap", "$wheelchairRating, $blindnessRating, $reviewText")
+                        val poi = JSONObject(selectedPoi)
+                        val poiId = poi["id"].toString()
+                        val encodedReviewText = URLEncoder.encode(reviewText, StandardCharsets.UTF_8)
+
+                        val client = OkHttpClient()
+                        val request = Request.Builder()
+                            .url(
+                                "https://accessimap.pythonanywhere.com/api/review/submit?" +
+                                        "wheelchair_rating=$wheelchairRating&" +
+                                        "blindness_rating=$blindnessRating&" +
+                                        "username=$username&" +
+                                        "review_text=$encodedReviewText&" +
+                                        "place_id=$poiId"
+                            )
+                            .build()
+                        client.newCall(request).enqueue(object: Callback {
+                            override fun onFailure(call: Call, e: IOException) {
+                                Log.e("accessimap explore page", "submitting review FAILED", e)
+                            }
+
+                            override fun onResponse(call: Call, response: Response) {
+                                Log.d("accessimap explore page", "review submtited")
+                            }
+                        })
+
                         showSuccessAnim = true;
                     }) {
                         Text("Submit Review")
@@ -797,7 +938,14 @@ fun Explore(modifier: Modifier = Modifier) {
 
     SuccessCheckmarkAnimation(
         isVisible = showSuccessAnim,
-        onDismiss = { showSuccessAnim = false; showPopup = false; focusManager.clearFocus(); }
+        onDismiss = {
+            showSuccessAnim = false
+            showPopup = false
+            focusManager.clearFocus()
+            wheelchairRating = 0
+            blindnessRating = 0
+            reviewText = ""
+        }
     )
 }
 
