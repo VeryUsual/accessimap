@@ -136,7 +136,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@PreviewScreenSizes
 @Composable
 fun AccessimapApp(username: String?) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.MAP) }
@@ -391,6 +390,10 @@ fun Map(modifier: Modifier = Modifier) {
         animationSpec = tween(2000)
     )
 
+    var wheelchairRating by remember { mutableStateOf(3) }
+    var blindnessRating by remember { mutableStateOf(3) }
+    var reviewText by remember { mutableStateOf("") }
+
     if (showPopup) {
         Popup(
             alignment = Alignment.Center,
@@ -408,21 +411,25 @@ fun Map(modifier: Modifier = Modifier) {
                     Spacer(modifier = Modifier.height(15.dp))
                     Row(horizontalArrangement = Arrangement.Center) {
                         Text("Wheelchair: ")
-                        StarRatingChooser()
+                        StarRatingChooser(rating = wheelchairRating, onRatingChange = { wheelchairRating = it })
                     }
                     Row(horizontalArrangement = Arrangement.Center) {
                         Text("Blindness: ")
-                        StarRatingChooser()
+                        StarRatingChooser(rating = blindnessRating, onRatingChange = { blindnessRating = it })
                     }
                     Spacer(modifier = Modifier.height(15.dp))
                     TextField(
-                        state = rememberTextFieldState(initialText = ""),
+                        value = reviewText,
+                        onValueChange = { reviewText = it },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(100.dp)
                     )
                     Spacer(modifier = Modifier.height(15.dp))
-                    Button(onClick = { showSuccessAnim = true; }) {
+                    Button(onClick = {
+                        Log.d("accessimap", "$wheelchairRating $blindnessRating $reviewText")
+                        showSuccessAnim = true
+                    }) {
                         Text("Submit Review")
                     }
                 }
@@ -437,14 +444,13 @@ fun Map(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun StarRatingChooser() {
-    var rating by remember { mutableStateOf(3) }
+fun StarRatingChooser(rating: Int, onRatingChange: (Int) -> Unit) {
     Row(horizontalArrangement = Arrangement.Center) {
         (1..5).forEach { star ->
             Icon(
                 imageVector = if (star <= rating) Icons.Default.Star else Icons.Default.StarBorder,
                 contentDescription = "$star star",
-                modifier = Modifier.clickable { rating = star }
+                modifier = Modifier.clickable { onRatingChange(star) }
             )
         }
     }
@@ -644,6 +650,10 @@ fun Explore(modifier: Modifier = Modifier) {
         animationSpec = tween(2000)
     )
 
+    var wheelchairRating by remember { mutableStateOf(3) }
+    var blindnessRating by remember { mutableStateOf(3) }
+    var reviewText by remember { mutableStateOf("") }
+
     if (showPopup) {
         Popup(
             alignment = Alignment.Center,
@@ -661,21 +671,25 @@ fun Explore(modifier: Modifier = Modifier) {
                     Spacer(modifier = Modifier.height(15.dp))
                     Row(horizontalArrangement = Arrangement.Center) {
                         Text("Wheelchair: ")
-                        StarRatingChooser()
+                        StarRatingChooser(rating = wheelchairRating, onRatingChange = { wheelchairRating = it })
                     }
                     Row(horizontalArrangement = Arrangement.Center) {
                         Text("Blindness: ")
-                        StarRatingChooser()
+                        StarRatingChooser(rating = blindnessRating, onRatingChange = { blindnessRating = it })
                     }
                     Spacer(modifier = Modifier.height(15.dp))
                     TextField(
-                        state = rememberTextFieldState(initialText = ""),
+                        value = reviewText,
+                        onValueChange = { reviewText = it },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(100.dp)
                     )
                     Spacer(modifier = Modifier.height(15.dp))
-                    Button(onClick = { showSuccessAnim = true; }) {
+                    Button(onClick = {
+                        Log.d("accessimap", "$wheelchairRating, $blindnessRating, $reviewText")
+                        showSuccessAnim = true;
+                    }) {
                         Text("Submit Review")
                     }
                 }
