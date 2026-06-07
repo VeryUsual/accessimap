@@ -102,6 +102,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         register?.setOnClickListener {
+            finish()
             val intent = Intent(this, WelcomeActivity::class.java)
             startActivity(intent)
         }

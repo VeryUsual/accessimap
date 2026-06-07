@@ -88,9 +88,11 @@ fun WelcomeScreen() {
         }
         composable(Screen.AreYouReady.route) {
             AreYouReadyScreen {
-                context.startActivity(
+                val activity = (context as? ComponentActivity)
+                activity?.startActivity(
                     Intent(context, MainActivity::class.java)
                 )
+                activity?.finish()
             }
         }
     }
