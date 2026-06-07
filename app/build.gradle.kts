@@ -74,4 +74,5 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.okhttp)
     implementation("com.airbnb.android:lottie-compose:6.6.7")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 }

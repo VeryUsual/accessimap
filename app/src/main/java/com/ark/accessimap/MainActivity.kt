@@ -8,6 +8,7 @@ import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateDpAsState
@@ -121,6 +122,26 @@ import org.json.JSONTokener
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import com.google.android.gms.location.LocationServices
+
+class Geo(private val lat: Double, private val lon: Double) {
+
+    companion object {
+        const val earthRadiusKm: Double = 6372.8
+    }
+
+    fun haversine(destination: Geo): Double {
+        val dLat = Math.toRadians(destination.lat - this.lat);
+        val dLon = Math.toRadians(destination.lon - this.lon);
+        val originLat = Math.toRadians(this.lat);
+        val destinationLat = Math.toRadians(destination.lat);
+
+        val a = Math.pow(Math.sin(dLat / 2), 2.toDouble()) + Math.pow(Math.sin(dLon / 2), 2.toDouble()) * Math.cos(originLat) * Math.cos(destinationLat);
+        val c = 2 * Math.asin(Math.sqrt(a));
+        return earthRadiusKm * c;
+    }
+
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -590,6 +611,8 @@ fun SuccessCheckmarkAnimation(isVisible: Boolean, onDismiss: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Explore(modifier: Modifier = Modifier, username: String? = null) {
+    var fusedLocationClient = LocalActivity.current?.let { LocationServices.getFusedLocationProviderClient(it) }
+    var cancellationTokenSource = com.google.android.gms.tasks.CancellationTokenSource()
     var poisJson by remember { mutableStateOf<String?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
@@ -599,6 +622,9 @@ fun Explore(modifier: Modifier = Modifier, username: String? = null) {
     var searchText by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
+    var userLocation by remember {
+        mutableStateOf<Geo?>(null)
+    }
 
     LaunchedEffect(selectedFilter, searchText) {
         val client = OkHttpClient()
@@ -616,6 +642,20 @@ fun Explore(modifier: Modifier = Modifier, username: String? = null) {
             poisJson = json
         }.onFailure { e ->
             Log.e("Accessimap Explore Page", "/api/places FAILED")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        fusedLocationClient?.getCurrentLocation(
+            com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+            cancellationTokenSource.token
+        )?.addOnSuccessListener { location ->
+            if (location != null) {
+                userLocation = Geo(
+                    location.latitude,
+                    location.longitude
+                )
+            }
         }
     }
 
@@ -713,6 +753,16 @@ fun Explore(modifier: Modifier = Modifier, username: String? = null) {
                         if (poi.getString("address") != "") {
                             Text(poi.getString("address"))
                         }
+
+                        val placegeo = Geo(poi.getDouble("lat"), poi.getDouble("lon"))
+                        val distance = userLocation?.haversine(placegeo)
+
+                        Text(
+                            distance?.let {
+                                String.format("%.1f km away", it)
+                            } ?: "Getting location..."
+                        )
+
                         Text(
                             poi.getString("amenity").replace("_", " ").split(" ")
                                 .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
