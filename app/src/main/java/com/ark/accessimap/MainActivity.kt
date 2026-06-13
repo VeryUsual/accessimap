@@ -1001,6 +1001,22 @@ fun Explore(modifier: Modifier = Modifier, username: String? = null) {
 
 @Composable
 fun Profile(username: String?, modifier: Modifier = Modifier) {
+    var reviewContributedCount = 0
+
+    val client = OkHttpClient()
+    val request = Request.Builder()
+        .url("https://accessimap.pythonanywhere.com/api/reviews_contributed_count/$username")
+        .build()
+    try {
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Error requesting reviews contributed count")
+
+            reviewContributedCount = response.body.string().toInt()
+        }
+    } catch (e: Exception) {
+        Log.e("accessimap profile page", "error!", e)
+    }
+
     Column(modifier = modifier.padding(horizontal = 20.dp)) {
 
         Text(
@@ -1027,7 +1043,7 @@ fun Profile(username: String?, modifier: Modifier = Modifier) {
         )
 
         Text(
-            text = "2 reviews contributed"
+            text = "$reviewContributedCount reviews contributed"
         )
 
         Spacer(

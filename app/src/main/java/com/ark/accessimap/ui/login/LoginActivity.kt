@@ -30,6 +30,14 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        /////////////////
+
+        finish()
+        val intent = Intent(this, WelcomeActivity::class.java)
+        startActivity(intent)
+
+        /////////////////
+
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
