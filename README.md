@@ -2,6 +2,10 @@
 
 A map of all accessible places. See, rate, and discover.
 
+## Installation
+
+Go to the [releases](https://github.com/VeryUsual/accessimap/releases) page, and download the APK file, then install it to your Android device.
+
 ## License
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
