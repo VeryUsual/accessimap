@@ -1,10 +1,10 @@
 # Accessimap
 
-A map of all accessible places. See, rate, and discover.
+A map of all accessible places. See places and their reviews, rate them, and discover new places meeting your needs.
 
 ## Installation
 
-Go to the [releases](https://github.com/VeryUsual/accessimap/releases) page, and download the APK file, then install it to your Android device.
+Go to the [releases](https://github.com/VeryUsual/accessimap/releases) page, and download the APK file, then install it to your Android device or emulator.
 
 ## License
 
